@@ -4,11 +4,9 @@ import java.util.Properties
 
 import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
 import org.apache.kafka.streams.kstream.{KStream, KStreamBuilder, ValueMapper}
-import org.apache.kafka.streams.processor.{ProcessorSupplier, TopologyBuilder}
-import org.apache.kafka.streams.state.Stores
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig}
 
-/** Converts Emotiv CSV to Grafana format */
+/** Converts Emotiv CSV to OpenTSDB format */
 object StreamTransformer extends App {
   val config = new Properties
   val host = args(0)
@@ -26,9 +24,12 @@ object StreamTransformer extends App {
   val textLines: KStream[String, String] = builder.stream(source)
   val transformed = textLines.mapValues(new ValueMapper[String, String]() {
     override def apply(record: String) = {
-      //val Array(counter, af3, f7, f3, fc5, t7, p7, o1, o2, p8, ti, fc6, f4, f8, af4, gyrox, gyroy, timestamp, _, _, marker, syncSignal, unixTimestap) = record.split(',')
+      //val Array(counter, af3, f7, f3, fc5, t7, p7, o1, o2, p8, ti, fc6, f4, f8, af4, gyrox, gyroy, timestamp, funcID, funcValue, marker, syncSignal) = record.split(',')
       val array = record.split(',')
-      val af3 = array(1)
+      var af3 = "0"
+      if (array.length > 1) { // TODO Avro schema
+        af3 = array(1)
+      }
       s"put eeg ${System.currentTimeMillis / 1000} ${af3} sensor=af3"
     }
   })
